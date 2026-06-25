@@ -8,9 +8,10 @@ import numpy as np
 from vectors import load_vectors, unit_matrix, nearest, parse_line
 
 USAGE_HINT = (
-    "  Usage: [+|-] word   add or subtract a word vector\n"
-    "         word          jump to a new starting word\n"
-    "         /exit         quit"
+    "  Usage: [+|-] word      add or subtract a word vector\n"
+    "         word             jump to a new starting word\n"
+    "         word1 word2 ...  find nearest word to the average of those vectors\n"
+    "         /exit            quit"
 )
 
 
@@ -57,6 +58,19 @@ def repl(
         if line.lower() == "/exit":
             print("Bye!")
             return
+
+        # Multi-word average: two or more bare words with no operator prefix
+        tokens = line.lower().split()
+        if len(tokens) > 1 and line[0] not in ("+", "-"):
+            missing = [t for t in tokens if t not in index]
+            if missing:
+                print(f"  Not in vocabulary: {', '.join(missing)}")
+                continue
+            avg_vec = np.mean([mat[index[t]] for t in tokens], axis=0)
+            exclude = {index[t] for t in tokens}
+            result_word, sim = nearest(avg_vec, unit_mat, words, exclude)[0]
+            print(f"  avg({', '.join(tokens)}) → {result_word}  (similarity {sim:.4f})")
+            continue
 
         parsed = parse_line(line)
         if parsed is None:
